@@ -1,8 +1,13 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Any, Dict
 
-app = FastAPI()
+from schemas import AccessRequest
+from database import create_document
+
+app = FastAPI(title="Opes Digital API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -63,6 +68,15 @@ def test_database():
     response["database_name"] = "✅ Set" if os.getenv("DATABASE_NAME") else "❌ Not Set"
     
     return response
+
+@app.post("/api/access-request")
+def create_access_request(payload: AccessRequest) -> Dict[str, Any]:
+    """Accept and store request access submissions"""
+    try:
+        doc_id = create_document("accessrequest", payload)
+        return {"id": doc_id, "status": "ok"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
